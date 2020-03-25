@@ -37,6 +37,8 @@ class FairlearnDashboard(object):
     :type y_pred: numpy.array or list[][] or list[] or dict {string: list[]}
     :param sensitive_feature_names: Feature names
     :type sensitive_feature_names: numpy.array or list[]
+    :param prediction_type: The kind of prediction being made. Currently only 'auto' is supported
+    :type prediction_type: str
     """
 
     def __init__(
