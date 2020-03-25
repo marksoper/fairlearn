@@ -152,7 +152,6 @@ class FairlearnDashboard(object):
         probability_methods = [method[0] for method in self._metric_methods.items()
                                if "probability" in method[1]["model_type"]]
 
-        dataset = self._sanitize_data_shape(sensitive_features)
         model_names = None
         if isinstance(y_pred, dict):
             model_names = []
@@ -166,6 +165,34 @@ class FairlearnDashboard(object):
             self._y_pred = [self._y_pred]
         self._y_true = self._convert_to_list(y_true)
 
+        dataset = None
+        extracted_sensitive_feature_names = None
+        if isinstance(sensitive_features, dict):
+            if sensitive_feature_names is not None:
+                warnings.warn("sensitive_features is a dictionary. "
+                              "Ignoring sensitive_feature_names")
+
+            # It appears that the ordering of dict.keys() and dict.values()
+            # is only specified in Python 3.7 and later
+            # Consequently, paranoia prompts the following....
+            sf_names = []
+            sf_arrs = []
+            for name, arr in sensitive_features.items():
+                sf_names.append(name)
+                sf_arrs.append(self._convert_to_list(arr))
+            extracted_sensitive_feature_names = list(sf_names)
+            dataset = self._sanitize_data_shape(np.transpose(sf_arrs))
+        else:
+            dataset = self._sanitize_data_shape(sensitive_features)
+            if sensitive_feature_names is not None:
+                sensitive_feature_names = self._convert_to_list(sensitive_feature_names)
+                if np.shape(dataset)[1] != np.shape(sensitive_feature_names)[0]:
+                    raise Warning("Feature names shape does not match dataset, ignoring")
+                else:
+                    extracted_sensitive_feature_names = sensitive_feature_names
+
+        print("dataset shape:", np.shape(dataset))
+        print("y_true shape:", np.shape(self._y_true))
         if np.shape(self._y_true)[0] != np.shape(self._y_pred)[1]:
             raise ValueError("Predicted y does not match true y shape")
 
@@ -181,16 +208,13 @@ class FairlearnDashboard(object):
             "probability_methods": probability_methods,
             "model_names": model_names
         }
+        if extracted_sensitive_feature_names is not None:
+            dataArg["features"] = extracted_sensitive_feature_names
 
         if sensitive_feature_names is not None:
             warnings.warn("sensitive_feature_names is deprecated. "
                           "Use dictionary of sensitive_features instead",
                           FutureWarning)
-            sensitive_feature_names = self._convert_to_list(sensitive_feature_names)
-            if np.shape(dataset)[1] != np.shape(sensitive_feature_names)[0]:
-                raise Warning("Feature names shape does not match dataset, ignoring")
-            else:
-                dataArg["features"] = sensitive_feature_names
 
         self._widget_instance.value = dataArg
         self._widget_instance.observe(self._on_request, names="request")
