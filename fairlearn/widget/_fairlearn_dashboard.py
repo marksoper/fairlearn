@@ -3,7 +3,7 @@
 
 """Defines the fairlearn dashboard class."""
 
-import logging
+import warnings
 
 from ._fairlearn_widget import FairlearnWidget
 from fairlearn.metrics import group_accuracy_score, group_precision_score,\
@@ -18,9 +18,6 @@ from scipy.sparse import issparse
 import copy
 import numpy as np
 import pandas as pd
-
-_logger = logging.getLogger(__file__)
-logging.basicConfig(level=logging.INFO)
 
 
 class FairlearnDashboard(object):
@@ -186,6 +183,9 @@ class FairlearnDashboard(object):
         }
 
         if sensitive_feature_names is not None:
+            warnings.warn("sensitive_feature_names is deprecated. "
+                          "Use dictionary of sensitive_features instead",
+                          FutureWarning)
             sensitive_feature_names = self._convert_to_list(sensitive_feature_names)
             if np.shape(dataset)[1] != np.shape(sensitive_feature_names)[0]:
                 raise Warning("Feature names shape does not match dataset, ignoring")
